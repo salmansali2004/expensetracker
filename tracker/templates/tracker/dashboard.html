@@ -1,0 +1,173 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Dashboard — ExpenseIQ{% endblock %}
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="ph">
+  <div>
+    <div class="ph-title">Good {% now "G" as h %}{% if h < 12 %}morning{% elif h < 18 %}afternoon{% else %}evening{% endif %}, {{ user.username }} 👋</div>
+    <div class="ph-sub">Here's your financial snapshot</div>
+  </div>
+  <a href="{% url 'add_transaction' %}" class="btn btn-primary">＋ Add Transaction</a>
+</div>
+
+<!-- Stat Cards -->
+<div class="grid g4 mb6">
+  <div class="card" style="border-top:3px solid var(--accent2)">
+    <div class="stat-lbl">Current Balance</div>
+    <div class="stat-val" style="color:{% if balance >= 0 %}var(--green){% else %}var(--red){% endif %}">₹{{ balance|floatformat:2 }}</div>
+    <div class="stat-sub">Opening ₹{{ profile.opening_balance|floatformat:2 }}</div>
+  </div>
+  <div class="card" style="border-top:3px solid var(--green)">
+    <div class="stat-lbl">Total Credits</div>
+    <div class="stat-val" style="color:var(--green)">₹{{ total_credits|floatformat:2 }}</div>
+    <span class="pill pill-g">↑ Money In</span>
+  </div>
+  <div class="card" style="border-top:3px solid var(--red)">
+    <div class="stat-lbl">Total Debits</div>
+    <div class="stat-val" style="color:var(--red)">₹{{ total_debits|floatformat:2 }}</div>
+    <span class="pill pill-r">↓ Money Out</span>
+  </div>
+  <div class="card" style="border-top:3px solid var(--blue)">
+    <div class="stat-lbl">Transactions</div>
+    <div class="stat-val">{{ tx_count }}</div>
+    <div class="stat-sub">All time records</div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="grid g-main mb6">
+  <div class="card">
+    <div class="flex aic jb mb4">
+      <div class="section-title" style="margin:0">Monthly Trend</div>
+      <span class="pill pill-p">Last 6 Months</span>
+    </div>
+    <canvas id="trendChart" style="max-height:200px"></canvas>
+  </div>
+  <div class="card">
+    <div class="flex aic jb mb4">
+      <div class="section-title" style="margin:0">This Month</div>
+      <span class="pill pill-b">Current</span>
+    </div>
+    <div class="mb4">
+      <div class="stat-lbl">Credits</div>
+      <div style="font-size:20px;font-weight:800;font-family:var(--mono);color:var(--green)">₹{{ month_credits|floatformat:2 }}</div>
+    </div>
+    <div class="mb4">
+      <div class="stat-lbl">Debits</div>
+      <div style="font-size:20px;font-weight:800;font-family:var(--mono);color:var(--red)">₹{{ month_debits|floatformat:2 }}</div>
+    </div>
+    <div class="div"></div>
+    <div class="stat-lbl">Net This Month</div>
+    <div style="font-size:18px;font-weight:800;font-family:var(--mono);color:{% if month_net >= 0 %}var(--green){% else %}var(--red){% endif %}">
+      {% if month_net >= 0 %}+{% endif %}₹{{ month_net|floatformat:2 }}
+    </div>
+  </div>
+</div>
+
+<!-- Category + Recent -->
+<div class="grid g2">
+  <div class="card">
+    <div class="flex aic jb mb4">
+      <div class="section-title" style="margin:0">Spending by Category</div>
+    </div>
+    {% if cat_data != "[]" %}
+    <canvas id="catChart" style="max-height:220px"></canvas>
+    {% else %}
+    <div class="empty" style="padding:30px">
+      <div class="empty-ic">🏷️</div>
+      <div class="empty-txt">No category data yet</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="flex aic jb mb4">
+      <div class="section-title" style="margin:0">Recent Activity</div>
+      <a href="{% url 'transaction_list' %}" class="btn btn-outline btn-sm">View All →</a>
+    </div>
+    {% if recent %}
+    <div class="tx-list">
+      {% for tx in recent %}
+      <a href="{% url 'edit_transaction' tx.pk %}" class="tx-row">
+        <div class="tx-ic" style="background:{% if tx.transaction_type == 'credit' %}var(--green-dim){% else %}var(--red-dim){% endif %}">
+          {% if tx.category %}{{ tx.category.icon }}{% elif tx.transaction_type == 'credit' %}💚{% else %}🔴{% endif %}
+        </div>
+        <div class="tx-info">
+          <div class="tx-name">{{ tx.title }}</div>
+          <div class="tx-meta">{{ tx.date|date:"M d" }} · {{ tx.get_payment_method_display }}</div>
+        </div>
+        <div class="tx-amt {% if tx.transaction_type == 'credit' %}cr{% else %}db{% endif %}">
+          {% if tx.transaction_type == 'credit' %}+{% else %}−{% endif %}₹{{ tx.amount|floatformat:2 }}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty" style="padding:30px">
+      <div class="empty-ic">📭</div>
+      <div class="empty-txt">No transactions yet.<br><a href="{% url 'add_transaction' %}" style="color:var(--accent2)">Add your first one →</a></div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script>
+const monthly = {{ monthly_data|safe }};
+const catData = {{ cat_data|safe }};
+const chartDefaults = {
+  color: '#5a5a72',
+  borderColor: '#252535',
+  font: { family: "'DM Mono', monospace", size: 11 }
+};
+Chart.defaults.color = chartDefaults.color;
+Chart.defaults.font = chartDefaults.font;
+
+// Trend chart
+new Chart(document.getElementById('trendChart'), {
+  type: 'bar',
+  data: {
+    labels: monthly.map(m => m.month),
+    datasets: [
+      { label: 'Credits', data: monthly.map(m => m.credits), backgroundColor: 'rgba(16,185,129,0.6)', borderRadius: 6, borderSkipped: false },
+      { label: 'Debits', data: monthly.map(m => m.debits), backgroundColor: 'rgba(239,68,68,0.6)', borderRadius: 6, borderSkipped: false }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    plugins: { legend: { labels: { boxWidth: 12, padding: 16 } } },
+    scales: {
+      x: { grid: { color: '#252535' }, ticks: { color: '#5a5a72' } },
+      y: { grid: { color: '#252535' }, ticks: { color: '#5a5a72', callback: v => '₹' + v } }
+    }
+  }
+});
+
+// Category donut
+if (catData.length) {
+  new Chart(document.getElementById('catChart'), {
+    type: 'doughnut',
+    data: {
+      labels: catData.map(c => (c.category__icon || '') + ' ' + (c.category__name || 'Other')),
+      datasets: [{
+        data: catData.map(c => c.total),
+        backgroundColor: catData.map(c => c.category__color || '#7c3aed'),
+        borderColor: '#111118', borderWidth: 3, hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true, cutout: '65%',
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 10, padding: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ' ₹' + ctx.parsed.toFixed(2) } }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Delete Transaction — ExpenseIQ{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:60px auto">
+  <div class="card" style="text-align:center;padding:40px">
+    <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+    <div style="font-size:18px;font-weight:800;margin-bottom:8px">Delete Transaction?</div>
+    <div style="color:var(--muted);font-family:var(--mono);font-size:13px;margin-bottom:24px">
+      "<strong style="color:var(--text)">{{ tx.title }}</strong>" · ₹{{ tx.amount|floatformat:2 }} · {{ tx.date|date:"d M Y" }}
+    </div>
+    <div style="color:var(--muted);font-size:13px;margin-bottom:28px">This action cannot be undone.</div>
+    <div class="flex gap2" style="justify-content:center">
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+      </form>
+      <a href="{% url 'transaction_list' %}" class="btn btn-outline">Cancel</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

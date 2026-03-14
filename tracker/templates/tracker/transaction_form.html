@@ -1,0 +1,91 @@
+{% extends 'tracker/base.html' %}
+{% block title %}{{ action }} Transaction — ExpenseIQ{% endblock %}
+{% block content %}
+
+<div class="ph">
+  <div>
+    <div class="ph-title">{{ action }} Transaction</div>
+    <div class="ph-sub">{% if action == 'Edit' %}Modify existing record{% else %}Record a new credit or debit{% endif %}</div>
+  </div>
+  <a href="{% url 'transaction_list' %}" class="btn btn-outline">← Back</a>
+</div>
+
+<div style="max-width:640px">
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+
+      <!-- Type toggle -->
+      <div class="fg">
+        <label class="fl">Transaction Type</label>
+        <div class="type-grid">
+          <button type="button" class="type-opt" id="btn-credit" onclick="setType('credit')">
+            ↑ Credit (Money In)
+          </button>
+          <button type="button" class="type-opt" id="btn-debit" onclick="setType('debit')">
+            ↓ Debit (Money Out)
+          </button>
+        </div>
+        <input type="hidden" name="transaction_type" id="type-hidden" value="{{ form.transaction_type.value|default:'debit' }}">
+      </div>
+
+      <div class="form-grid">
+        <div class="fg span2">
+          <label class="fl">{{ form.title.label }}</label>
+          {{ form.title }}
+          {% if form.title.errors %}<div style="color:var(--red);font-size:11px;margin-top:4px">{{ form.title.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="fg">
+          <label class="fl">Amount (₹)</label>
+          {{ form.amount }}
+          {% if form.amount.errors %}<div style="color:var(--red);font-size:11px;margin-top:4px">{{ form.amount.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="fg">
+          <label class="fl">Date</label>
+          {{ form.date }}
+        </div>
+
+        <div class="fg">
+          <label class="fl">Category</label>
+          {{ form.category }}
+        </div>
+
+        <div class="fg">
+          <label class="fl">Payment Method</label>
+          {{ form.payment_method }}
+        </div>
+
+        <div class="fg span2">
+          <label class="fl">Note <span style="color:var(--muted)">(optional)</span></label>
+          {{ form.note }}
+        </div>
+      </div>
+
+      <div class="div"></div>
+      <div class="flex gap2">
+        <button type="submit" class="btn btn-primary">
+          {% if action == 'Edit' %}Save Changes{% else %}Add Transaction{% endif %}
+        </button>
+        <a href="{% url 'transaction_list' %}" class="btn btn-outline">Cancel</a>
+        {% if action == 'Edit' and tx %}
+        <a href="{% url 'delete_transaction' tx.pk %}" class="btn btn-danger" style="margin-left:auto">Delete</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+{% block js %}
+<script>
+function setType(val) {
+  document.getElementById('type-hidden').value = val;
+  document.getElementById('btn-credit').className = 'type-opt' + (val === 'credit' ? ' sel-cr' : '');
+  document.getElementById('btn-debit').className = 'type-opt' + (val === 'debit' ? ' sel-db' : '');
+}
+// Init on load
+setType(document.getElementById('type-hidden').value || 'debit');
+</script>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Transactions — ExpenseIQ{% endblock %}
+{% block content %}
+
+<div class="ph">
+  <div>
+    <div class="ph-title">Transactions</div>
+    <div class="ph-sub">{{ count }} record{% if count != 1 %}s{% endif %} found</div>
+  </div>
+  <a href="{% url 'add_transaction' %}" class="btn btn-primary">＋ Add New</a>
+</div>
+
+<!-- Summary bar -->
+<div class="grid g3 mb6" style="grid-template-columns:1fr 1fr 1fr">
+  <div class="card card-sm flex aic gap3" style="padding:16px 20px">
+    <span style="font-size:22px">↑</span>
+    <div>
+      <div class="stat-lbl" style="margin:0">Credits</div>
+      <div style="font-size:18px;font-weight:800;font-family:var(--mono);color:var(--green)">₹{{ total_credits|floatformat:2 }}</div>
+    </div>
+  </div>
+  <div class="card flex aic gap3" style="padding:16px 20px">
+    <span style="font-size:22px">↓</span>
+    <div>
+      <div class="stat-lbl" style="margin:0">Debits</div>
+      <div style="font-size:18px;font-weight:800;font-family:var(--mono);color:var(--red)">₹{{ total_debits|floatformat:2 }}</div>
+    </div>
+  </div>
+  <div class="card flex aic gap3" style="padding:16px 20px">
+    <span style="font-size:22px">⚖</span>
+    <div>
+      <div class="stat-lbl" style="margin:0">Net</div>
+      <div style="font-size:18px;font-weight:800;font-family:var(--mono);color:{% if net >= 0 %}var(--green){% else %}var(--red){% endif %}">
+        {% if net >= 0 %}+{% endif %}₹{{ net|floatformat:2 }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb4" style="padding:18px 20px">
+  <form method="get">
+    <div class="filter-bar">
+      {{ filter_form.search }}
+      {{ filter_form.transaction_type }}
+      {{ filter_form.category }}
+      {{ filter_form.payment_method }}
+      {{ filter_form.period }}
+    </div>
+    <div class="flex aic gap2" id="customRange" style="display:none!important">
+      {{ filter_form.date_from }}
+      <span style="color:var(--muted);font-family:var(--mono)">to</span>
+      {{ filter_form.date_to }}
+    </div>
+    <div class="flex gap2 mt4">
+      <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+      <a href="{% url 'transaction_list' %}" class="btn btn-outline btn-sm">Clear</a>
+    </div>
+  </form>
+</div>
+
+<!-- Table -->
+<div class="card" style="padding:0;overflow:hidden">
+  {% if transactions %}
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Type</th>
+          <th>Amount</th>
+          <th>Category</th>
+          <th>Method</th>
+          <th>Date</th>
+          <th>Note</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tx in transactions %}
+        <tr>
+          <td style="font-weight:600;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ tx.title }}</td>
+          <td>
+            <span class="badge {% if tx.transaction_type == 'credit' %}badge-cr{% else %}badge-db{% endif %}">
+              {% if tx.transaction_type == 'credit' %}↑ Credit{% else %}↓ Debit{% endif %}
+            </span>
+          </td>
+          <td style="font-family:var(--mono);font-weight:700;color:{% if tx.transaction_type == 'credit' %}var(--green){% else %}var(--red){% endif %}">
+            {% if tx.transaction_type == 'credit' %}+{% else %}−{% endif %}₹{{ tx.amount|floatformat:2 }}
+          </td>
+          <td>
+            {% if tx.category %}
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px">
+              <span style="background:{{ tx.category.color }}22;color:{{ tx.category.color }};padding:2px 8px;border-radius:6px;font-family:var(--mono);font-weight:600">
+                {{ tx.category.icon }} {{ tx.category.name }}
+              </span>
+            </span>
+            {% else %}
+            <span style="color:var(--muted);font-family:var(--mono);font-size:11px">—</span>
+            {% endif %}
+          </td>
+          <td style="color:var(--muted);font-family:var(--mono);font-size:11px">{{ tx.get_payment_method_display }}</td>
+          <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">{{ tx.date|date:"d M Y" }}</td>
+          <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--muted)">
+            {{ tx.note|default:"—" }}
+          </td>
+          <td>
+            <div class="flex gap2">
+              <a href="{% url 'edit_transaction' tx.pk %}" class="btn btn-outline btn-sm">Edit</a>
+              <a href="{% url 'delete_transaction' tx.pk %}" class="btn btn-danger btn-sm">Del</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <div class="empty-ic">📭</div>
+    <div class="empty-txt">No transactions found.<br>
+      <a href="{% url 'add_transaction' %}" style="color:var(--accent2)">Add your first transaction →</a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+{% block js %}
+<script>
+  const periodSel = document.querySelector('[name=period]');
+  const customRange = document.getElementById('customRange');
+  function toggleCustom() {
+    if (periodSel.value === 'custom') customRange.style.display = 'flex';
+    else customRange.style.display = 'none';
+  }
+  periodSel && periodSel.addEventListener('change', toggleCustom);
+  toggleCustom();
+</script>
+{% endblock %}

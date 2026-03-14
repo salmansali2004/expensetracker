@@ -1,0 +1,80 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Categories — ExpenseIQ{% endblock %}
+{% block content %}
+
+<div class="ph">
+  <div>
+    <div class="ph-title">Categories</div>
+    <div class="ph-sub">{{ cats.count }} categor{% if cats.count == 1 %}y{% else %}ies{% endif %} in your account</div>
+  </div>
+</div>
+
+<div class="grid g2">
+  <!-- Category List -->
+  <div>
+    <div class="card" style="padding:0;overflow:hidden">
+      {% if cats %}
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--muted);font-family:var(--mono);letter-spacing:1px">YOUR CATEGORIES</div>
+      {% for cat in cats %}
+      <div class="flex aic jb" style="padding:13px 20px;border-bottom:1px solid rgba(37,37,53,.5)">
+        <div class="flex aic gap3">
+          <div style="width:36px;height:36px;border-radius:9px;background:{{ cat.color }}22;display:flex;align-items:center;justify-content:center;font-size:18px">{{ cat.icon }}</div>
+          <div>
+            <div style="font-weight:700;font-size:14px">{{ cat.name }}</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">{{ cat.transaction_set.count|default:"0" }} uses</div>
+          </div>
+        </div>
+        <div class="flex aic gap2">
+          <div style="width:12px;height:12px;border-radius:3px;background:{{ cat.color }}"></div>
+          <form method="post" action="{% url 'delete_category' cat.pk %}" onsubmit="return confirm('Delete category \'{{ cat.name }}\'?')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="empty">
+        <div class="empty-ic">🏷️</div>
+        <div class="empty-txt">No categories yet</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Add Category -->
+  <div>
+    <div class="card">
+      <div class="section-title">Add Category</div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="fg">
+          <label class="fl">Name</label>
+          {{ form.name }}
+        </div>
+        <div class="grid g2" style="gap:12px">
+          <div class="fg">
+            <label class="fl">Icon (Emoji)</label>
+            {{ form.icon }}
+          </div>
+          <div class="fg">
+            <label class="fl">Color</label>
+            {{ form.color }}
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Add Category</button>
+      </form>
+    </div>
+
+    <div class="card mt4" style="padding:16px 18px">
+      <div style="font-size:11px;color:var(--muted);font-family:var(--mono);line-height:1.9">
+        💡 <strong style="color:var(--text)">Tips</strong><br>
+        · Use emojis as icons for quick visual identification<br>
+        · Pick distinct colors to differentiate spending areas<br>
+        · Deleting a category won't delete its transactions
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

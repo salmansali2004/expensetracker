@@ -1,0 +1,76 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Account Settings — ExpenseIQ{% endblock %}
+{% block content %}
+
+<div class="ph">
+  <div>
+    <div class="ph-title">Account Settings</div>
+    <div class="ph-sub">Manage your profile and preferences</div>
+  </div>
+</div>
+
+<div style="max-width:560px">
+
+  <!-- Profile Info -->
+  <div class="card mb4">
+    <div class="section-title">Profile</div>
+    <div style="display:flex;align-items:center;gap:16px;padding:16px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+      <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--accent),#3b82f6);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;flex-shrink:0">
+        {{ user.username|first|upper }}
+      </div>
+      <div>
+        <div style="font-size:17px;font-weight:800">{{ user.username }}</div>
+        <div style="font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:2px">{{ user.email|default:"No email set" }}</div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px">Joined {{ user.date_joined|date:"d M Y" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Opening Balance -->
+  <div class="card mb4">
+    <div class="section-title">Opening Balance</div>
+    <p style="font-size:13px;color:var(--muted);font-family:var(--mono);margin-bottom:18px;line-height:1.6">
+      This is the starting balance of your account before any transactions were recorded. Adjust this to reflect your real balance.
+    </p>
+    <form method="post">
+      {% csrf_token %}
+      <div class="fg">
+        <label class="fl">Opening Balance (₹)</label>
+        <input type="number" name="opening_balance" step="0.01"
+               value="{{ profile.opening_balance|floatformat:2 }}"
+               class="form-input" placeholder="0.00">
+      </div>
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+    </form>
+  </div>
+
+  <!-- Stats Summary -->
+  <div class="card">
+    <div class="section-title">Account Summary</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+        <div class="stat-lbl">Total Transactions</div>
+        <div style="font-size:22px;font-weight:800;font-family:var(--mono)">{{ user.transactions.count }}</div>
+      </div>
+      <div style="padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+        <div class="stat-lbl">Categories</div>
+        <div style="font-size:22px;font-weight:800;font-family:var(--mono)">{{ user.categories.count }}</div>
+      </div>
+      <div style="padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+        <div class="stat-lbl">Current Balance</div>
+        <div style="font-size:20px;font-weight:800;font-family:var(--mono);color:var(--green)">₹{{ profile.get_balance|floatformat:2 }}</div>
+      </div>
+      <div style="padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+        <div class="stat-lbl">Opening Balance</div>
+        <div style="font-size:20px;font-weight:800;font-family:var(--mono);color:var(--accent2)">₹{{ profile.opening_balance|floatformat:2 }}</div>
+      </div>
+    </div>
+
+    <div class="div"></div>
+    <a href="{% url 'logout' %}" class="btn btn-danger" style="width:100%;justify-content:center">
+      ⏻ Log Out
+    </a>
+  </div>
+
+</div>
+{% endblock %}

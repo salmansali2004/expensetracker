@@ -1,0 +1,39 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Login — ExpenseIQ{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-title">💸 ExpenseIQ</div>
+      <div class="auth-sub">Sign in to your account</div>
+    </div>
+
+    {% if messages %}
+    <div class="msgs">
+      {% for m in messages %}<div class="msg {{ m.tags }}">{{ m }}</div>{% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" autocomplete="on">
+      {% csrf_token %}
+      <div class="fg">
+        <label class="fl">Username</label>
+        <input name="username" type="text" class="form-input" placeholder="Enter your username" autofocus required>
+      </div>
+      <div class="fg">
+        <label class="fl">Password</label>
+        <input name="password" type="password" class="form-input" placeholder="Enter your password" required>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:13px;">
+        Sign In →
+      </button>
+    </form>
+
+    <div class="auth-divider"><span>or</span></div>
+    <div style="text-align:center;font-size:13px;color:var(--muted)">
+      Don't have an account?
+      <a href="{% url 'register' %}" class="auth-link">Create one</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
